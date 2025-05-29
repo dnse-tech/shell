@@ -6,7 +6,7 @@ include hack/make/deps.mk
 include hack/make/build.mk
 
 # Define target platforms, image builder and the fully qualified image name.
-TARGET_PLATFORMS ?= linux/amd64,linux/arm64
+TARGET_PLATFORMS ?= linux/s390x
 
 REPO ?= rancher
 IMAGE = $(REPO)/shell:$(TAG)

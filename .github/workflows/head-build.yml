@@ -11,10 +11,11 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: write # Upload artefacts to release.
+  contents: read
+  packages: write # Permission to push to GitHub Packages
 
 env:
-  PUBLIC_REGISTRY: docker.io
+  PUBLIC_REGISTRY: ghcr.io
 
 jobs:
   prebuild-env:
@@ -34,9 +35,9 @@ jobs:
   publish-public:
     permissions:
       contents: read
+      packages: write
       # write is needed for:
       # - OIDC for cosign's use in ecm-distro-tools/publish-image.
-      # - Read vault secrets in rancher-eio/read-vault-secrets.
       id-token: write
 
     runs-on: ubuntu-latest
@@ -46,30 +47,31 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Load Secrets from Vault
-        uses: rancher-eio/read-vault-secrets@main
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
         with:
-          secrets: |
-            secret/data/github/repo/${{ github.repository }}/dockerhub/rancher/credentials username | DOCKER_USERNAME ;
-            secret/data/github/repo/${{ github.repository }}/dockerhub/rancher/credentials password | DOCKER_PASSWORD ;
+          registry: ${{ env.PUBLIC_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push all image variations
         uses: rancher/ecm-distro-tools/actions/publish-image@master
         with:
           image: ${{ vars.IMAGE_NAME || 'shell' }}
           tag: ${{ needs.prebuild-env.outputs.branch_static_tag }}
-          platforms: "linux/amd64,linux/arm64"
+          platforms: "linux/s390x"
 
           public-registry: ${{ env.PUBLIC_REGISTRY }}
           public-repo: ${{ vars.REPO || github.repository_owner }}
-          public-username: ${{ env.DOCKER_USERNAME || vars.DOCKER_USERNAME || github.repository_owner }}
-          public-password: ${{ env.DOCKER_PASSWORD || secrets.DOCKER_PASSWORD }}
+          public-username: ${{ github.actor }}
+          public-password: ${{ secrets.GITHUB_TOKEN }}
 
+          push-to-public: true
           push-to-prime: false
 
       - name: Re-tag the static head image using the rolling tag
         env:
-          FULL_IMAGE_URL: ${{ env.PUBLIC_REGISTRY }}/${{ vars.REPO || github.repository_owner }}/${{ vars.IMAGE_NAME || 'shell' }}
+          FULL_IMAGE_URL: ${{ env.PUBLIC_REGISTRY }}/${{ github.repository_owner }}/${{ vars.IMAGE_NAME || 'shell' }}
         run: |
           VERSION="1.2.0"
           curl -LO "https://github.com/oras-project/oras/releases/download/v${VERSION}/oras_${VERSION}_linux_amd64.tar.gz"
