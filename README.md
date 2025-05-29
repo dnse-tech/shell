@@ -1,3 +1,17 @@
+# shell (s390x Fork)
+
+This repository is a fork of the official `rancher/shell` repository, created to add support for the `s390x` platform.
+
+## Disclaimer
+- This fork **only builds for the `s390x` platform** to respect the distribution rights of the original repository and to reduce resource waste, as users can find artifacts for other platforms in the original repository.
+- We support versions starting from **v0.4.1** onwards and will strive to keep up with the releases of the original repository.
+
+## Notes
+- This repository and its artifacts are provided **as is**.
+- Questions are welcomed, but please do not expect technical support.
+
+---
+
 # shell
 
 The `rancher/shell` image is used:
